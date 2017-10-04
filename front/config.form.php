@@ -28,46 +28,39 @@
  * ------------------------------------------------------------------------------
  */
 
-namespace tests\units;
+include ('../../../inc/includes.php');
+$plugin = new Plugin();
+if (!$plugin->isActivated('orion')) {
+   Html::displayNotFoundError();
+}
 
-use Glpi\Test\CommonTestCase;
-use Plugin;
+Session::checkRight('config', UPDATE);
 
-class Config extends CommonTestCase
-{
+$plugin = new Plugin();
+$config = new Config();
+$pluginConfig = new PluginOrionConfig();
+if (isset($_POST["update"])) {
+   $config->update($_POST);
+   Html::back();
+} else if (isset($_POST['addDocTypes'])) {
+   $pluginConfig->addDocumentTypes();
+   Html::back();
+} else {
+   // Header
 
-   public function beforeTestMethod($method) {
-      $this->resetState();
-      parent::beforeTestMethod($method);
-      $this->setupGLPIFramework();
+   Html::header(
+      __('Configuration'),
+      '',
+      'config',
+      'plugin',
+      'orion'
+   );
+   $pluginConfig->showForm();
+   // Footer
+
+   if (strstr($_SERVER['PHP_SELF'], 'popup')) {
+      Html::popFooter();
+   } else {
+      Html::footer();
    }
-
-   /**
-    *
-    */
-   public function testUninstallPlugin() {
-      global $DB;
-
-      $pluginName = TEST_PLUGIN_NAME;
-
-      $plugin = new Plugin();
-      $plugin->getFromDBbyDir($pluginName);
-
-      // Uninstall the plugin
-      ob_start(function($in) { return ''; });
-      $plugin->uninstall($plugin->getID());
-      ob_end_clean();
-
-      // Check the plugin is not installed
-      $this->boolean($plugin->isInstalled($pluginName))->isFalse();
-
-      // Check all plugin's tables are dropped
-      $tables = [];
-      $result = $DB->query("SHOW TABLES LIKE 'glpi_plugin_" . $pluginName . "_%'");
-      while ($row = $DB->fetch_assoc($result)) {
-         $tables[] = array_pop($row);
-      }
-      $this->integer(count($tables))->isEqualTo(0, "not deleted tables \n" . json_encode($tables, JSON_PRETTY_PRINT));
-   }
-
 }

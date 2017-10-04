@@ -2,29 +2,28 @@
 /**
  * LICENSE
  *
- * Copyright © 2016-2017 Teclib'
- * Copyright © 2010-2016 by the FusionInventory Development Team.
+ * Copyright © 2017 Teclib'
  *
- * This file is part of Flyve MDM Plugin for GLPI.
+ * This file is part of Orion for GLPI.
  *
- * Flyve MDM Plugin for GLPI is a subproject of Flyve MDM. Flyve MDM is a mobile
+ * Orion Plugin for GLPI is a subproject of Flyve MDM. Flyve MDM is a mobile
  * device management software.
  *
- * Flyve MDM Plugin for GLPI is free software: you can redistribute it and/or
+ * Orion Plugin for GLPI is free software: you can redistribute it and/or
  * modify it under the terms of the GNU Affero General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * Flyve MDM Plugin for GLPI is distributed in the hope that it will be useful,
+ * Orion Plugin for GLPI is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public License
- * along with Flyve MDM Plugin for GLPI. If not, see http://www.gnu.org/licenses/.
+ * along with Orion Plugin for GLPI. If not, see http://www.gnu.org/licenses/.
  * ------------------------------------------------------------------------------
  * @author    Thierry Bugier Pineau
  * @copyright Copyright © 2017 Teclib
  * @license   AGPLv3+ http://www.gnu.org/licenses/agpl.txt
- * @link      https://github.com/flyve-mdm/flyve-mdm-glpi-plugin
+ * @link      https://github.com/flyve-mdm/orion-glpi-plugin
  * @link      https://flyve-mdm.com/
  * ------------------------------------------------------------------------------
  */
@@ -38,7 +37,7 @@ class Config extends CommonTestCase
 {
 
    /**
-    *
+    * @engine inline
     */
    public function testInstallPlugin() {
       global $DB;
@@ -52,7 +51,7 @@ class Config extends CommonTestCase
 
       //Drop plugin configuration if exists
       $config = $this->newTestedInstance();
-      $config->deleteByCriteria(array('context' => $pluginname));
+      $config->deleteByCriteria(['context' => $pluginname]);
 
       // Drop tables of the plugin if they exist
       $query = "SHOW TABLES";
@@ -74,7 +73,8 @@ class Config extends CommonTestCase
       $plugin->install($plugin->fields['id']);
       ob_end_clean();
 
-      // Assert the database matches the schema
+      // Assert the database matches the schema (disabled because it will always match)
+      // TODO: migrate this test to an upgrade test
       $filename = GLPI_ROOT."/plugins/$pluginname/install/mysql/plugin_" . $pluginname . "_empty.sql";
       $this->checkInstall($filename, 'glpi_plugin_' . $pluginname . '_', 'install');
 
@@ -114,7 +114,7 @@ class Config extends CommonTestCase
       $settings = [
          'mqtt_broker_port' => '1884',
       ];
-      \Config::setConfigurationValues('orion', $settings);
+      \Config::setConfigurationValues('flyvemdm', $settings);
    }
 
    /**
@@ -123,8 +123,12 @@ class Config extends CommonTestCase
    private function installDependancies() {
 
       $this->boolean(self::login('glpi', 'glpi', true))->isTrue();
-      $pluginName = 'fusioninventory';
 
+      $this->installSinglePlugin('fusioninventory');
+      $this->installSinglePlugin('flyvemdm');
+   }
+
+   private function installSinglePlugin($pluginName) {
       $plugin = new Plugin;
       $plugin->getFromDBbyDir($pluginName);
 
@@ -135,7 +139,6 @@ class Config extends CommonTestCase
       $plugin->activate($plugin->getID());
 
       // Check the plugin is installed
-      $this->boolean($plugin->isActivated($pluginName))->isTrue();
+      $this->boolean($plugin->isActivated($pluginName))->isTrue("Failed to enable plugin $pluginName");
    }
-
 }
